@@ -19,13 +19,25 @@ export class SmtpDriver implements EmailDriverInterface {
   }
 
   async send(sendMailOptions: SendMailOptions): Promise<void> {
+    const envFromAddress = process.env.EMAIL_FROM_ADDRESS;
+    const envFromName = process.env.EMAIL_FROM_NAME;
+
+    // clone original options
+    const finalOptions: SendMailOptions = { ...sendMailOptions };
+
+    // if EMAIL_FROM_ADDRESS is set, override from with a nice "Name <email>" header
+    if (envFromAddress) {
+      const displayName = envFromName || envFromAddress;
+      finalOptions.from = `"${displayName}" <${envFromAddress}>`;
+    }
+
     this.transport
-      .sendMail(sendMailOptions)
+      .sendMail(finalOptions)
       .then(() =>
-        this.logger.log(`Email to '${sendMailOptions.to}' successfully sent`),
+        this.logger.log(`Email to '${finalOptions.to}' successfully sent`),
       )
       .catch((err) =>
-        this.logger.error(`sending email to '${sendMailOptions.to}': ${err}`),
+        this.logger.error(`sending email to '${finalOptions.to}': ${err}`),
       );
   }
 }
